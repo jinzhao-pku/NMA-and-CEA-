@@ -1,0 +1,13 @@
+IPD_camel_pfs0.txt
+IPD_camel_pfs1.txt
+IPD_nivol_pfs0.txt
+IPD_nivol_pfs1.txt
+IPD_torip_pfs0.txt
+IPD_torip_pfs1.txt
+IPD_pembr_pfs0.txt
+IPD_pembr_pfs1.txt
+IPD_tisle_pfs0.txt
+IPD_tisle_pfs1.txt
+IPD_sinti_pfs0.txt
+IPD_sinti_pfs1.txt
+
