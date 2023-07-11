@@ -1,0 +1,94 @@
+# i = patient
+# j = trial
+
+Model  {
+
+	for(j in 1:Ntrials) {
+
+	for(i in offset[j]+1:offset[j+1]) {
+
+		zeros[i] <- 0	
+
+		eta[i, j] <- A[i] + B[i]
+
+		A[i] <- gamma[1, j] + gamma[2, j]*u0[i] + gamma[3, j]*u1n[i] + gamma[4, j]*u2n[i] + beta[1]*trt2[i] + beta[2]*trt3[i] + beta[3]*trt4[i]+ beta[4]*trt5[i] + beta[5]*trt6[i] + beta[6]*trt7[i]
+
+		B [i] <- beta[7]*trt2lnt[i] + beta[8]*trt3lnt[i] + beta[9]*trt4lnt[i]
+					+ beta[10]*trt5lnt[i] + beta[11]*trt6lnt[i] +                
+                                beta[12]*trt7lnt[i]
+
+
+		d.sp[i, j] <- gamma[2, j]*du0[i] + gamma[3, j]*du1n[i] + gamma[4, j]*du2n[i]+ beta[7]*trt2[i] + beta[8]*trt3[i] + beta[9]*trt4[i] + beta[10]*trt5[i] + beta[11]*trt6[i] + beta[12]*trt7lnt[i]
+		
+		lnL[i] <- max( - ( d[i] * ( log( max( d.sp[i, j],0.0001) )  +  eta[i, j]- exp(eta[i, j])  )  - (1-d[i])*exp(eta[i, j]) ), 0.000001) 
+		
+		zeros[i] ~ dpois(lnL[i]) 
+	
+
+	}
+
+	
+# Prior Distributions	
+
+	for(p in 1:4) {
+		gamma[p, j] ~ dnorm(0,0.0001)
+	}
+
+	}
+		 
+	for(p in 1:12) {	
+		beta[p] ~ dnorm(0,0.0001)
+	}
+
+
+
+		   
+# Survival predictions
+
+phi1 <- (k3-k1)/(k3-k0)
+phi2 <- (k3-k2)/(k3-k0)
+
+for (t in 1:120) {
+
+a[t] <- max(log(t)-k1, 0)
+b[t] <- max(log(t)-k0, 0)
+c[t] <- max(log(t)-k3, 0)
+e[t] <- max(log(t)-k2, 0)
+
+v0[t] <- log(t)
+v1[t] <- pow(a[t], 3) - phi1*pow(b[t], 3) - (1-phi1)*pow(c[t], 3)
+v2[t] <- pow(e[t], 3) - phi2*pow(b[t], 3) - (1-phi2)*pow(c[t], 3)
+
+w0[t] <- (v0[t] -meanv0) / sdv0
+
+w1[t] <- v1[t] - (( (v1w0) / (w0w0) )*w0[t])
+w1n[t] <- ( w1[t] - meanw1 )/ sdw1
+
+w2[t] <- v2[t] - ( ( (v2w0) / (w0w0) )*w0[t]) - ( ( (v2w1n) / (w1nw1n) )*w1n[t])
+w2n[t] <- ( w2[t] - meanw2 )/ sdw2
+
+# Survival relative to DTIC
+surv[1,t] <- exp( -exp( gamma[1, 1] + gamma[2, 1]*w0[t] + gamma[3, 1]*w1n[t] + gamma[4, 1]*w2n[t] )) 
+
+surv[2,t] <- exp( -exp( gamma[1, 1] + gamma[2, 1]*w0[t] + gamma[3, 1]*w1n[t] + gamma[4, 1]*w2n[t] + beta[1] + beta[7]*log(t) ))
+
+surv[3,t] <- exp( -exp( gamma[1, 1] + gamma[2, 1]*w0[t] + gamma[3, 1]*w1n[t] + gamma[4, 1]*w2n[t] + beta[2] + beta[8]*log(t) ))	
+
+surv[4,t] <- exp( -exp( gamma[1, 1] + gamma[2, 1]*w0[t] + gamma[3, 1]*w1n[t] + gamma[4, 1]*w2n[t] + beta[3] + beta[9]*log(t) ))
+
+surv[5,t] <- exp( -exp( gamma[1, 1] + gamma[2, 1]*w0[t] + gamma[3, 1]*w1n[t] + gamma[4, 1]*w2n[t] + beta[4] + beta[10]*log(t) ))
+
+surv[6,t] <- exp( -exp( gamma[1, 1] + gamma[2, 1]*w0[t] + gamma[3, 1]*w1n[t] + gamma[4, 1]*w2n[t] + beta[5] + beta[11]*log(t) ))
+
+surv[7,t] <- exp( -exp( gamma[1, 1] + gamma[2, 1]*w0[t] + gamma[3, 1]*w1n[t] + gamma[4, 1]*w2n[t] + beta[6] + beta[12]*log(t) ))
+}
+
+# Rank treatments at 36 months
+for (rt in 1:36) {
+  for (l in 1:nt) {   
+      for (m in 1:nt) {    
+        rk[rt,l,m] <- equals(ranked(surv[,rt],m),surv[l,rt])     
+      }   
+    }
+  }
+}
